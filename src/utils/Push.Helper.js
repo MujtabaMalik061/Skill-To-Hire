@@ -19,7 +19,13 @@ export const sendPush = async ({
   }
 
   if (type === "mail") {
-    return sendMail({ apiKey, from, mails, subject, htmlContent });
+    return sendMail({
+      apiKey,
+      from,
+      mails,
+      subject,
+      htmlContent,
+    });
   }
 
   if (type === "push") {

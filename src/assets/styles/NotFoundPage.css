@@ -1,0 +1,31 @@
+.not-found-page {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.not-found-page__code {
+  margin: 0;
+  color: #25805e;
+  font: 800 72px/1 "Manrope", sans-serif;
+  letter-spacing: -0.06em;
+}
+
+.not-found-page h1 {
+  margin: 0;
+  font: 800 30px/1.2 "Manrope", sans-serif;
+}
+
+.not-found-page > p:not(.not-found-page__code) {
+  margin: 0;
+  color: #6b7871;
+}
+
+.not-found-page a {
+  margin-top: 8px;
+  color: #176b4b;
+}

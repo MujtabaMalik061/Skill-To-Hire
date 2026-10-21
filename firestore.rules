@@ -1,0 +1,247 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function indexPath(authId) {
+      return /databases/$(database)/documents/UserIndex/$(authId);
+    }
+
+    function userPath(docId) {
+      return /databases/$(database)/documents/Users/$(docId);
+    }
+
+    function privatePath(docId) {
+      return /databases/$(database)/documents/UserPrivate/$(docId);
+    }
+
+    function myProfileId() {
+      return get(indexPath(request.auth.uid)).data.docId;
+    }
+
+    function isProfileOwner(docId) {
+      return signedIn()
+        && exists(userPath(docId))
+        && get(userPath(docId)).data.authId == request.auth.uid;
+    }
+
+    function hasUserConnection(otherDocId) {
+      return signedIn()
+        && (
+          exists(/databases/$(database)/documents/UserConnections/$(myProfileId() + '_' + otherDocId))
+          || exists(/databases/$(database)/documents/UserConnections/$(otherDocId + '_' + myProfileId()))
+        );
+    }
+
+    function canReadProfile(docId) {
+      return signedIn()
+        && (isProfileOwner(docId) || hasUserConnection(docId));
+    }
+
+    function validRole(role) {
+      return role in [
+        'student',
+        'employee',
+        'jobProvider'
+      ];
+    }
+
+    function activeProvider(docId) {
+      return exists(userPath(docId))
+        && get(userPath(docId)).data.role == 'jobProvider';
+    }
+
+    function applicationPath(applicationId) {
+      return /databases/$(database)/documents/Applications/$(applicationId);
+    }
+
+    function canReadApplication(application) {
+      return signedIn()
+        && (application.candidateAuthId == request.auth.uid
+          || application.providerAuthId == request.auth.uid);
+    }
+
+    match /UserIndex/{authId} {
+      allow get: if signedIn() && request.auth.uid == authId;
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.auth.uid == authId
+        && request.resource.data.authId == authId
+        && request.resource.data.docId is string
+        && getAfter(userPath(request.resource.data.docId)).data.authId == authId
+        && getAfter(privatePath(request.resource.data.docId)).data.authId == authId;
+
+      allow update, delete: if false;
+    }
+
+    match /Users/{docId} {
+      allow get: if signedIn()
+        && (resource == null || canReadProfile(docId));
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.docId == docId
+        && request.resource.data.authId == request.auth.uid
+        && validRole(request.resource.data.role)
+        && request.resource.data.hasPushToken == false
+        && getAfter(indexPath(request.auth.uid)).data.docId == docId
+        && getAfter(privatePath(docId)).data.authId == request.auth.uid;
+
+      allow update: if signedIn()
+        && (
+          (resource.data.authId == request.auth.uid
+            && request.resource.data.docId == resource.data.docId
+            && request.resource.data.authId == resource.data.authId
+            && validRole(request.resource.data.role)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'firstName',
+              'lastName',
+              'role',
+              'headline',
+              'skills',
+              'employmentStatus',
+              'universityName',
+              'companyName',
+              'companyWebsite',
+              'bio',
+              'hasPushToken',
+              'updatedAt'
+            ])
+            && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['hasPushToken'])
+              || request.resource.data.hasPushToken == true))
+        );
+
+      allow delete: if false;
+    }
+
+    match /UserPrivate/{docId} {
+      allow get: if signedIn()
+        && (resource == null
+          || canReadProfile(docId));
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.docId == docId
+        && request.resource.data.authId == request.auth.uid
+        && getAfter(userPath(docId)).data.authId == request.auth.uid
+        && getAfter(indexPath(request.auth.uid)).data.docId == docId;
+
+      allow update: if signedIn()
+        && resource.data.authId == request.auth.uid
+        && request.resource.data.authId == resource.data.authId
+        && request.resource.data.docId == resource.data.docId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fcmTokens',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /Jobs/{jobId} {
+      allow get, list: if resource.data.status == 'published'
+        || (signedIn() && resource.data.providerAuthId == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.jobId == jobId
+        && request.resource.data.providerAuthId == request.auth.uid
+        && request.resource.data.providerDocId == myProfileId()
+        && activeProvider(request.resource.data.providerDocId)
+        && request.resource.data.status == 'published';
+
+      allow update: if signedIn()
+        && resource.data.providerAuthId == request.auth.uid
+        && request.resource.data.providerAuthId == resource.data.providerAuthId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'updatedAt'
+        ])
+        && request.resource.data.status in ['published', 'paused', 'closed'];
+
+      allow delete: if false;
+    }
+
+    match /Applications/{applicationId} {
+      allow get, list: if canReadApplication(resource.data);
+
+      allow create: if signedIn()
+        && request.resource.data.applicationId == applicationId
+        && request.resource.data.candidateAuthId == request.auth.uid
+        && request.resource.data.candidateDocId == myProfileId()
+        && get(/databases/$(database)/documents/Users/$(myProfileId())).data.role in ['student', 'employee']
+        && get(/databases/$(database)/documents/Jobs/$(request.resource.data.jobId)).data.status == 'published'
+        && get(/databases/$(database)/documents/Jobs/$(request.resource.data.jobId)).data.providerDocId == request.resource.data.providerDocId
+        && request.resource.data.providerAuthId == get(/databases/$(database)/documents/Jobs/$(request.resource.data.jobId)).data.providerAuthId
+        && applicationId == request.resource.data.jobId + '_' + request.resource.data.candidateDocId;
+
+      allow update: if signedIn()
+        && resource.data.providerAuthId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'reviewing',
+          'interview',
+          'accepted',
+          'declined'
+        ];
+
+      allow delete: if false;
+    }
+
+    match /UserConnections/{connectionId} {
+      allow get: if signedIn()
+        && (resource.data.candidateAuthId == request.auth.uid
+          || resource.data.providerAuthId == request.auth.uid);
+      allow list: if false;
+
+      allow create, update: if signedIn()
+        && request.resource.data.candidateDocId == myProfileId()
+        && request.resource.data.candidateAuthId == request.auth.uid
+        && existsAfter(applicationPath(
+          request.resource.data.jobId + '_' + request.resource.data.candidateDocId
+        ))
+        && getAfter(applicationPath(
+          request.resource.data.jobId + '_' + request.resource.data.candidateDocId
+        )).data.providerDocId == request.resource.data.providerDocId
+        && request.resource.data.providerAuthId == get(userPath(request.resource.data.providerDocId)).data.authId
+        && connectionId == request.resource.data.candidateDocId + '_' + request.resource.data.providerDocId;
+
+      allow delete: if false;
+    }
+
+    match /Notifications/{notificationId} {
+      allow get, list: if signedIn()
+        && resource.data.recipientDocId == myProfileId();
+
+      allow create: if signedIn()
+        && request.resource.data.senderAuthId == request.auth.uid
+        && request.resource.data.read == false
+        && request.resource.data.title is string
+        && request.resource.data.body is string
+        && (
+          (request.resource.data.type == 'application_received'
+            && exists(applicationPath(request.resource.data.applicationId))
+            && get(applicationPath(request.resource.data.applicationId)).data.candidateAuthId == request.auth.uid
+            && get(applicationPath(request.resource.data.applicationId)).data.providerDocId == request.resource.data.recipientDocId)
+          || (request.resource.data.type == 'application_status'
+            && exists(applicationPath(request.resource.data.applicationId))
+            && get(applicationPath(request.resource.data.applicationId)).data.providerAuthId == request.auth.uid
+            && get(applicationPath(request.resource.data.applicationId)).data.candidateDocId == request.resource.data.recipientDocId)
+        );
+
+      allow update: if signedIn()
+        && resource.data.recipientDocId == myProfileId()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read == true;
+
+      allow delete: if false;
+    }
+  }
+}

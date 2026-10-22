@@ -1,0 +1,151 @@
+.candidate-profile-page {
+  display: grid;
+  gap: 20px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f4f6ff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: #c4b5fd;
+}
+
+.candidate-profile {
+  max-width: 700px;
+  display: grid;
+  gap: 0;
+  padding: clamp(24px, 4vw, 38px);
+  border-color: rgba(190, 211, 255, 0.14);
+  background: rgba(23, 33, 54, 0.76);
+}
+
+.candidate-profile__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding-bottom: 26px;
+}
+
+.candidate-profile__avatar {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(165, 180, 252, 0.25);
+  border-radius: 16px;
+  background: rgba(99, 102, 241, 0.24);
+  color: #e0e7ff;
+  font: 700 24px/1 "Plus Jakarta Sans", sans-serif;
+}
+
+.candidate-profile__header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.candidate-profile__header-info h1 {
+  margin: 0 0 6px;
+  color: #f8f9ff;
+  font: 800 22px/1.2 "Plus Jakarta Sans", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.candidate-profile__headline {
+  margin: 0;
+  color: #a5afc5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Override profile-role-pill for dark theme */
+.candidate-profile .profile-role-pill {
+  flex: 0 0 auto;
+  border-color: rgba(129, 140, 248, 0.2);
+  color: #c4b5fd;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.candidate-profile__section {
+  display: grid;
+  gap: 14px;
+  padding: 22px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.candidate-profile__section h2 {
+  margin: 0;
+  color: #77839e;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.candidate-profile__section > p {
+  margin: 0;
+  color: #c8d0e8;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.candidate-profile__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.skill-tag {
+  padding: 5px 11px;
+  border: 1px solid rgba(76, 215, 246, 0.2);
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.1);
+  color: #8de8fb;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.candidate-profile__details {
+  display: grid;
+  gap: 12px;
+}
+
+.candidate-profile__detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c8d0e8;
+  font-size: 13px;
+}
+
+.candidate-profile__detail-row svg {
+  flex: 0 0 auto;
+  color: #77839e;
+}
+
+.candidate-profile__detail-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #a5b4fc;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.candidate-profile__detail-row a:hover {
+  color: #c4b5fd;
+  text-decoration: underline;
+}
+
+.candidate-profile__not-found {
+  color: #a5afc5;
+  font-size: 13px;
+}

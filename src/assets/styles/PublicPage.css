@@ -1,0 +1,865 @@
+/* ─────────────────────────────────────────────────────────────────
+   Public Pages — ForEmployers & About
+   Uses the same design tokens as global.css / LandingPage.css
+───────────────────────────────────────────────────────────────── */
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+
+.public-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 560px;
+  padding: 90px 0 64px;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(112deg, rgba(239, 247, 241, 0.94), rgba(248, 250, 248, 0.78)),
+    #edf5ef;
+}
+
+.public-hero--about {
+  min-height: 420px;
+  padding-bottom: 56px;
+}
+
+.public-hero__glow {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.public-hero__glow--one {
+  top: -220px;
+  right: -130px;
+  background: radial-gradient(circle, rgba(189, 224, 199, 0.52), transparent 68%);
+}
+
+.public-hero__glow--two {
+  right: 26%;
+  bottom: -340px;
+  background: radial-gradient(circle, rgba(211, 231, 217, 0.6), transparent 68%);
+}
+
+.public-hero__inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 52px;
+  min-height: 380px;
+}
+
+.public-hero__visual-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.public-hero__inner--centered {
+  grid-template-columns: 1fr;
+  max-width: 740px;
+}
+
+.public-hero__copy {
+  max-width: 580px;
+}
+
+.public-hero__copy--centered {
+  max-width: none;
+  text-align: center;
+}
+
+.public-hero h1 {
+  margin: 22px 0 18px;
+  font: 800 clamp(38px, 4.8vw, 62px)/1.05 "Manrope", sans-serif;
+  letter-spacing: -0.06em;
+  color: var(--ink);
+}
+
+.public-hero h1 span {
+  display: block;
+  color: var(--green);
+}
+
+.public-hero__lead {
+  margin: 0;
+  max-width: 510px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.public-hero__copy--centered .public-hero__lead {
+  margin: 0 auto;
+}
+
+.public-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+/* ── Hero visual card (for-employers) ───────────────────────────── */
+
+.public-stats-card {
+  padding: 28px 30px;
+  max-width: 360px;
+}
+
+.public-stats-card .eyebrow {
+  display: block;
+  margin-bottom: 22px;
+}
+
+.public-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.public-stat {
+  display: grid;
+  gap: 4px;
+}
+
+.public-stat strong {
+  color: var(--ink);
+  font: 800 28px/1 "Manrope", sans-serif;
+  letter-spacing: -0.05em;
+}
+
+.public-stat span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.public-pipeline__label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.public-pipeline__bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--green-soft);
+}
+
+.public-pipeline__bar span {
+  height: 100%;
+}
+
+/* ── Logged-in dashboard nudge ──────────────────────────────────── */
+
+.public-dashboard-nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 10px 12px;
+  border: 1px solid rgba(23, 107, 75, 0.18);
+  border-radius: 999px;
+  background: rgba(232, 243, 236, 0.82);
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.public-dashboard-nudge:hover {
+  transform: translateY(-2px);
+  background: rgba(232, 243, 236, 1);
+  box-shadow: 0 8px 22px rgba(23, 107, 75, 0.14);
+}
+
+.public-dashboard-nudge__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(23, 107, 75, 0.18);
+}
+
+/* ── General section spacing ────────────────────────────────────── */
+
+.public-section {
+  padding-top: 80px;
+  padding-bottom: 12px;
+}
+
+.public-section .section-heading h2 {
+  margin-top: 8px;
+  font-size: clamp(24px, 3vw, 32px);
+}
+
+/* ── Stats strip ────────────────────────────────────────────────── */
+
+.public-stats-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 44px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.public-stats-strip__item {
+  display: grid;
+  flex: 1;
+  min-width: 160px;
+  gap: 6px;
+  padding: 18px 28px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+
+.public-stats-strip__item:last-child {
+  border-right: none;
+}
+
+.public-stats-strip__item strong {
+  color: var(--ink);
+  font: 800 clamp(28px, 4vw, 42px)/1 "Manrope", sans-serif;
+  letter-spacing: -0.05em;
+}
+
+.public-stats-strip__item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── Reasons grid ───────────────────────────────────────────────── */
+
+.public-reasons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-reason {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-reason__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--green-soft);
+  color: var(--green);
+  margin-bottom: 4px;
+}
+
+.public-reason strong {
+  color: var(--ink);
+  font: 700 14px "Manrope", sans-serif;
+}
+
+.public-reason span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Steps ──────────────────────────────────────────────────────── */
+
+.public-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-step {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 26px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-step__num {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  color: rgba(28, 61, 45, 0.08);
+  font: 800 44px/1 "Manrope", sans-serif;
+  letter-spacing: -0.06em;
+  pointer-events: none;
+}
+
+.public-step__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.public-step h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font: 700 14px "Manrope", sans-serif;
+}
+
+.public-step p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+/* ── Feature highlights (2-col) ─────────────────────────────────── */
+
+.public-features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-feature {
+  display: flex;
+  gap: 18px;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-feature__icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.public-feature__body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.public-feature__body h3 {
+  margin: 0;
+  color: var(--ink);
+  font: 700 14px "Manrope", sans-serif;
+}
+
+.public-feature__body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* ── Testimonials ───────────────────────────────────────────────── */
+
+.public-testimonials {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-testimonial {
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-testimonial__quote {
+  color: var(--green);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.public-testimonial blockquote {
+  margin: 0;
+  color: #2b3d33;
+  font-size: 13px;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.public-testimonial__author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.public-testimonial__avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green);
+  font: 700 13px "Manrope", sans-serif;
+}
+
+.public-testimonial__author-info strong {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.public-testimonial__author-info span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ── FAQ ────────────────────────────────────────────────────────── */
+
+.public-faq {
+  display: grid;
+  gap: 10px;
+  margin-top: 32px;
+  max-width: 780px;
+}
+
+.public-faq__item {
+  padding: 22px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 16px;
+  background: var(--glass);
+  box-shadow: 0 8px 28px rgba(28, 57, 42, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.public-faq__item h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font: 700 14px "Manrope", sans-serif;
+}
+
+.public-faq__item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ── CTA banner ─────────────────────────────────────────────────── */
+
+.public-cta-section {
+  padding-top: 64px;
+  padding-bottom: 16px;
+}
+
+.public-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 56px 36px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(234, 246, 238, 0.7)
+  );
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-cta h2 {
+  margin: 0;
+  color: var(--ink);
+  font: 800 clamp(24px, 3vw, 36px)/1.2 "Manrope", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.public-cta p {
+  margin: 0;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.public-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* ── Mission block (about) ──────────────────────────────────────── */
+
+.public-mission {
+  padding: clamp(30px, 4vw, 52px) clamp(28px, 5vw, 64px);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(234, 246, 238, 0.68)
+  );
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-mission .eyebrow {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.public-mission h2 {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font: 700 clamp(18px, 2.4vw, 26px)/1.42 "Manrope", sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.public-mission p {
+  margin: 0;
+  max-width: 700px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* ── Values (about) ─────────────────────────────────────────────── */
+
+.public-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-value {
+  display: grid;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-value__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.public-value h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font: 700 15px "Manrope", sans-serif;
+}
+
+.public-value p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.68;
+}
+
+/* ── Story (about) ──────────────────────────────────────────────── */
+
+.public-story {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 52px;
+  align-items: center;
+  padding-top: 80px;
+  padding-bottom: 12px;
+}
+
+.public-story__copy h2 {
+  margin: 10px 0 18px;
+  color: var(--ink);
+  font: 800 clamp(24px, 3vw, 34px)/1.2 "Manrope", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.public-story__copy p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.public-story__copy p:last-child {
+  margin-bottom: 0;
+}
+
+.public-story__card {
+  display: grid;
+  gap: 16px;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-story__stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--green-soft);
+}
+
+.public-story__stat-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(23, 107, 75, 0.12);
+  color: var(--green);
+}
+
+.public-story__stat strong {
+  display: block;
+  color: var(--ink);
+  font: 800 22px/1 "Manrope", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.public-story__stat span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ── Team ───────────────────────────────────────────────────────── */
+
+.public-team {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-team-card {
+  display: grid;
+  gap: 12px;
+  padding: 26px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-team-card__avatar {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--green-soft);
+  color: var(--green);
+  font: 700 20px "Manrope", sans-serif;
+}
+
+.public-team-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font: 700 14px "Manrope", sans-serif;
+}
+
+.public-team-card__role {
+  display: block;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: -6px;
+}
+
+.public-team-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Features how-it-works strip (landing) ──────────────────────── */
+
+.public-how-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.public-how-card {
+  display: grid;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.public-how-card__icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.public-how-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font: 700 15px "Manrope", sans-serif;
+}
+
+.public-how-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 980px) {
+  .public-hero__inner {
+    grid-template-columns: 1fr 0.82fr;
+    gap: 28px;
+  }
+
+  .public-reasons,
+  .public-steps,
+  .public-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-testimonials {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-story {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 720px) {
+  .public-hero {
+    min-height: auto;
+    padding: 60px 0 44px;
+  }
+
+  .public-hero__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .public-stats-card {
+    max-width: none;
+  }
+
+  .public-values,
+  .public-team {
+    grid-template-columns: 1fr;
+  }
+
+  .public-testimonials {
+    grid-template-columns: 1fr;
+  }
+
+  .public-stats-strip {
+    gap: 0;
+  }
+
+  .public-stats-strip__item {
+    min-width: 140px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .public-stats-strip__item:last-child {
+    border-bottom: none;
+  }
+
+  .public-how-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .public-reasons,
+  .public-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .public-features {
+    grid-template-columns: 1fr;
+  }
+
+  .public-cta {
+    padding: 38px 20px;
+  }
+}

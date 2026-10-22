@@ -2,26 +2,30 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   BriefcaseBusiness,
-  Users,
+  ClipboardList,
+  FileText,
+  LayoutList,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import Loading from "../components/loading.component.jsx";
-import {CustomSelector} from "../components/custom.components.jsx";
 import useAuth from "../hooks/auth.hook.jsx";
 import {
   getCandidateApplicationsPage,
   getProviderApplicationsPage,
-  updateApplicationStatus,
 } from "../services/applications.services.js";
-import { createNotification } from "../services/notifications.services.js";
-import {
-  getProviderJobsPage,
-  updateJobStatus,
-} from "../services/jobs.services.js";
-import {
-  getUserContactProfileByDocId,
-} from "../services/user.services.js";
+import { getProviderJobsPage } from "../services/jobs.services.js";
 import "../assets/styles/DashboardPage.css";
 
 const statusLabels = {
@@ -32,11 +36,29 @@ const statusLabels = {
   declined: "Closed",
 };
 
-const formatDate = (timestamp) => {
-  if (!timestamp?.seconds) {
-    return "Just now";
-  }
+const STATUS_CONFIG = [
+  { key: "submitted",  label: "Submitted",  color: "#f59e0b" },
+  { key: "reviewing",  label: "In review",  color: "#818cf8" },
+  { key: "interview",  label: "Interview",  color: "#4cd7f6" },
+  { key: "accepted",   label: "Offer made", color: "#10b981" },
+  { key: "declined",   label: "Closed",     color: "#fb7185" },
+];
 
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    background: "rgba(10, 15, 29, 0.97)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 10,
+    color: "#e7ebfb",
+    fontSize: 12,
+    boxShadow: "0 8px 28px rgba(0,0,0,0.35)",
+  },
+  itemStyle: { color: "#a5b4fc" },
+  labelStyle: { color: "#a5afc5", marginBottom: 2 },
+};
+
+const formatDate = (timestamp) => {
+  if (!timestamp?.seconds) return "Just now";
   return new Date(timestamp.seconds * 1000).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -44,38 +66,41 @@ const formatDate = (timestamp) => {
   });
 };
 
+const buildWeeklyData = (applications) =>
+  Array.from({ length: 6 }, (_, i) => {
+    const offset = 5 - i;
+    const now = Date.now();
+    const start = now - offset * 7 * 86400000;
+    const end = start + 7 * 86400000;
+    return {
+      week: new Date(start).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      }),
+      count: applications.filter((a) => {
+        const ms = (a.createdAt?.seconds || 0) * 1000;
+        return ms >= start && ms < end;
+      }).length,
+    };
+  });
+
+// ─── Candidate dashboard ───────────────────────────────────────────────────
+
 const CandidateDashboard = ({ profile }) => {
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState(null);
-  const [hasMore, setHasMore] = useState(false);
 
-  const loadApplications = useCallback(async ({
-    nextCursor = null,
-    append = false,
-  } = {}) => {
-    if (append) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
-
+  const loadApplications = useCallback(async () => {
+    setIsLoading(true);
     try {
       const page = await getCandidateApplicationsPage({
         candidateAuthId: profile.authId,
-        cursor: nextCursor,
       });
-      setApplications((currentApplications) =>
-        append ? [...currentApplications, ...page.items] : page.items,
-      );
-      setCursor(page.cursor);
-      setHasMore(page.hasMore);
+      setApplications(page.items);
     } catch (error) {
       console.error("Could not load applications:", error);
     } finally {
       setIsLoading(false);
-      setIsLoadingMore(false);
     }
   }, [profile.authId]);
 
@@ -83,8 +108,25 @@ const CandidateDashboard = ({ profile }) => {
     loadApplications();
   }, [loadApplications]);
 
+  const reviewingCount = applications.filter((a) => a.status === "reviewing").length;
+  const interviewCount = applications.filter((a) => a.status === "interview").length;
+  const offerCount = applications.filter((a) => a.status === "accepted").length;
+
+  const statusCounts = applications.reduce((acc, a) => {
+    acc[a.status] = (acc[a.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const pieData = STATUS_CONFIG.map((s) => ({
+    ...s,
+    value: statusCounts[s.key] || 0,
+  })).filter((s) => s.value > 0);
+
+  const weeklyData = buildWeeklyData(applications);
+
   return (
     <>
+      {/* Welcome */}
       <div className="dashboard-welcome">
         <div>
           <span className="eyebrow">YOUR CAREER, IN MOTION</span>
@@ -96,181 +138,200 @@ const CandidateDashboard = ({ profile }) => {
         </Link>
       </div>
 
-      <section className="dashboard-panel glass-card">
-        <div className="dashboard-panel__heading">
-          <div>
-            <span className="eyebrow">APPLICATIONS</span>
-            <h2>Your recent activity</h2>
+      {/* Stats */}
+      <div className="dashboard-stats dashboard-stats--4">
+        <div className="dashboard-stat glass-card">
+          <span>Applied</span>
+          <strong>{isLoading ? "—" : applications.length}</strong>
+        </div>
+        <div className="dashboard-stat glass-card">
+          <span>In review</span>
+          <strong>{isLoading ? "—" : reviewingCount}</strong>
+        </div>
+        <div className="dashboard-stat glass-card">
+          <span>Interviews</span>
+          <strong>{isLoading ? "—" : interviewCount}</strong>
+        </div>
+        <div className="dashboard-stat glass-card">
+          <span>Offers</span>
+          <strong>{isLoading ? "—" : offerCount}</strong>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="dashboard-charts">
+        {/* Area — applications over time */}
+        <div className="dashboard-chart-card glass-card">
+          <div className="dashboard-chart-card__heading">
+            <h3>Applications over time</h3>
+            <span className="dashboard-chart-card__sub">Last 6 weeks</span>
           </div>
-          <span className="dashboard-count">
-            {applications.length} loaded
-          </span>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart
+              data={weeklyData}
+              margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="candGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4cd7f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#4cd7f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.06)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="week"
+                tick={{ fill: "#77839e", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "#77839e", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                width={26}
+              />
+              <Tooltip
+                {...TOOLTIP_STYLE}
+                cursor={{ stroke: "rgba(76,215,246,0.18)", strokeWidth: 1 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                name="Applications"
+                stroke="#4cd7f6"
+                strokeWidth={2}
+                fill="url(#candGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: "#4cd7f6", strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
-        {isLoading ? (
-          <Loading label="Loading your applications" />
-        ) : applications.length ? (
-          <>
-            <div className="application-list">
-            {applications.map((application) => (
-              <article className="application-row" key={application.applicationId}>
-                <span className="application-row__icon">
-                  <BriefcaseBusiness size={17} />
-                </span>
-                <div className="application-row__main">
-                  <Link to={`/jobs/${application.jobId}`}>
-                    {application.jobTitle}
-                  </Link>
-                  <span>{application.companyName} · Applied {formatDate(application.createdAt)}</span>
-                </div>
-                <span className={`status-pill status-pill--${application.status}`}>
-                  {statusLabels[application.status] || application.status}
-                </span>
-              </article>
-            ))}
-            </div>
-            {hasMore && (
-            <div className="dashboard-load-more">
-              <button
-                className="button button--quiet button--small"
-                type="button"
-                disabled={isLoadingMore}
-                onClick={() =>
-                  loadApplications({ nextCursor: cursor, append: true })
-                }
-              >
-                {isLoadingMore ? "Loading…" : "Load more applications"}
-              </button>
-            </div>
-            )}
-          </>
-        ) : (
-          <div className="dashboard-empty">
-            <p>You haven’t applied to a role yet.</p>
-            <Link to="/jobs">Find a role that fits <ArrowRight size={14} /></Link>
+        {/* Donut — status breakdown */}
+        <div className="dashboard-chart-card glass-card">
+          <div className="dashboard-chart-card__heading">
+            <h3>Status breakdown</h3>
+            <span className="dashboard-chart-card__sub">
+              {applications.length} total
+            </span>
           </div>
-        )}
-      </section>
+          {isLoading ? (
+            <div className="dashboard-chart-card__empty">Loading…</div>
+          ) : pieData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={148}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={46}
+                    outerRadius={68}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry) => (
+                      <Cell key={entry.key} fill={entry.color} opacity={0.9} />
+                    ))}
+                  </Pie>
+                  <Tooltip {...TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="chart-legend">
+                {pieData.map((entry) => (
+                  <div key={entry.key} className="chart-legend__item">
+                    <span className="chart-legend__label">
+                      <span
+                        className="chart-legend__dot"
+                        style={{ background: entry.color }}
+                      />
+                      {entry.label}
+                    </span>
+                    <span className="chart-legend__value">{entry.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="dashboard-chart-card__empty">
+              No applications yet.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick action cards */}
+      <div className="dashboard-quick-links">
+        <Link className="dashboard-quick-card glass-card" to="/applications">
+          <span className="dashboard-quick-card__icon">
+            <FileText size={20} />
+          </span>
+          <div>
+            <strong>My applications</strong>
+            <span>Track every role you've applied to</span>
+          </div>
+          <ArrowRight size={16} />
+        </Link>
+        <Link className="dashboard-quick-card glass-card" to="/jobs">
+          <span className="dashboard-quick-card__icon">
+            <BriefcaseBusiness size={20} />
+          </span>
+          <div>
+            <strong>Explore jobs</strong>
+            <span>Browse new opportunities that match your skills</span>
+          </div>
+          <ArrowRight size={16} />
+        </Link>
+      </div>
     </>
   );
 };
+
+// ─── Provider dashboard ────────────────────────────────────────────────────
 
 const ProviderDashboard = ({ profile }) => {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState("");
-  const [jobsCursor, setJobsCursor] = useState(null);
-  const [applicationsCursor, setApplicationsCursor] = useState(null);
-  const [hasMoreJobs, setHasMoreJobs] = useState(false);
-  const [hasMoreApplications, setHasMoreApplications] = useState(false);
-  const [isLoadingMoreJobs, setIsLoadingMoreJobs] = useState(false);
-  const [isLoadingMoreApplications, setIsLoadingMoreApplications] = useState(false);
 
   useEffect(() => {
-    const loadWorkspace = async () => {
-      setIsLoading(true);
-
-      try {
-        const [jobsPage, applicationsPage] = await Promise.all([
-          getProviderJobsPage({ providerAuthId: profile.authId }),
-          getProviderApplicationsPage({ providerAuthId: profile.authId }),
-        ]);
+    Promise.all([
+      getProviderJobsPage({ providerAuthId: profile.authId }),
+      getProviderApplicationsPage({ providerAuthId: profile.authId }),
+    ])
+      .then(([jobsPage, appsPage]) => {
         setJobs(jobsPage.items);
-        setJobsCursor(jobsPage.cursor);
-        setHasMoreJobs(jobsPage.hasMore);
-        setApplications(applicationsPage.items);
-        setApplicationsCursor(applicationsPage.cursor);
-        setHasMoreApplications(applicationsPage.hasMore);
-      } catch (error) {
-        console.error("Could not load your workspace:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadWorkspace();
+        setApplications(appsPage.items);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, [profile.authId]);
 
-  const loadMoreJobs = async () => {
-    setIsLoadingMoreJobs(true);
+  const publishedCount = jobs.filter((j) => j.status === "published").length;
+  const reviewingCount = applications.filter((a) => a.status === "reviewing").length;
+  const interviewCount = applications.filter((a) => a.status === "interview").length;
 
-    try {
-      const page = await getProviderJobsPage({
-        providerAuthId: profile.authId,
-        cursor: jobsCursor,
-      });
-      setJobs((currentJobs) => [...currentJobs, ...page.items]);
-      setJobsCursor(page.cursor);
-      setHasMoreJobs(page.hasMore);
-    } catch (error) {
-      toast.error("More jobs could not be loaded.");
-    } finally {
-      setIsLoadingMoreJobs(false);
-    }
-  };
+  const statusCounts = applications.reduce((acc, a) => {
+    acc[a.status] = (acc[a.status] || 0) + 1;
+    return acc;
+  }, {});
 
-  const loadMoreApplications = async () => {
-    setIsLoadingMoreApplications(true);
+  const pieData = STATUS_CONFIG.map((s) => ({
+    ...s,
+    value: statusCounts[s.key] || 0,
+  })).filter((s) => s.value > 0);
 
-    try {
-      const page = await getProviderApplicationsPage({
-        providerAuthId: profile.authId,
-        cursor: applicationsCursor,
-      });
-      setApplications((currentApplications) => [
-        ...currentApplications,
-        ...page.items,
-      ]);
-      setApplicationsCursor(page.cursor);
-      setHasMoreApplications(page.hasMore);
-    } catch (error) {
-      toast.error("More applications could not be loaded.");
-    } finally {
-      setIsLoadingMoreApplications(false);
-    }
-  };
-
-  const handleApplicationStatus = async (application, status) => {
-    setUpdatingId(application.applicationId);
-
-    try {
-      await updateApplicationStatus(application.applicationId, status);
-      const candidate = await getUserContactProfileByDocId(application.candidateDocId);
-
-      if (candidate) {
-        await createNotification(profile, candidate, {
-          type: "application_status",
-          title: `Application update: ${statusLabels[status]}`,
-          body: `Your application for ${application.jobTitle} is now ${statusLabels[status].toLowerCase()}.`,
-          link: "/dashboard",
-          applicationId: application.applicationId,
-        }).catch((notificationError) => {
-          console.error("Status was updated but its alert failed:", notificationError);
-        });
-      }
-
-      toast.success("Applicant status updated.");
-    } catch (error) {
-      toast.error(error.message || "The application could not be updated.");
-    } finally {
-      setUpdatingId("");
-    }
-  };
-
-  const handleJobStatus = async (job) => {
-    const nextStatus = job.status === "published" ? "paused" : "published";
-
-    try {
-      await updateJobStatus(job.jobId, nextStatus);
-      toast.success(nextStatus === "published" ? "Job is live." : "Job paused.");
-    } catch (error) {
-      toast.error(error.message || "Job status could not be changed.");
-    }
-  };
+  const weeklyData = buildWeeklyData(applications);
 
   return (
     <>
+      {/* Welcome */}
       <div className="dashboard-welcome">
         <div>
           <span className="eyebrow">EMPLOYER WORKSPACE</span>
@@ -282,134 +343,168 @@ const ProviderDashboard = ({ profile }) => {
         </Link>
       </div>
 
-      <div className="dashboard-stats">
+      {/* Stats */}
+      <div className="dashboard-stats dashboard-stats--4">
         <div className="dashboard-stat glass-card">
-          <span>Published roles loaded</span>
-          <strong>{jobs.filter((job) => job.status === "published").length}</strong>
+          <span>Live jobs</span>
+          <strong>{isLoading ? "—" : publishedCount}</strong>
         </div>
         <div className="dashboard-stat glass-card">
-          <span>Applications loaded</span>
-          <strong>{applications.length}</strong>
+          <span>Applications</span>
+          <strong>{isLoading ? "—" : applications.length}</strong>
         </div>
         <div className="dashboard-stat glass-card">
-          <span>In review loaded</span>
-          <strong>{applications.filter((item) => item.status === "reviewing").length}</strong>
+          <span>In review</span>
+          <strong>{isLoading ? "—" : reviewingCount}</strong>
+        </div>
+        <div className="dashboard-stat glass-card">
+          <span>Interviews</span>
+          <strong>{isLoading ? "—" : interviewCount}</strong>
         </div>
       </div>
 
-      <section className="dashboard-panel glass-card">
-        <div className="dashboard-panel__heading">
-          <div>
-            <span className="eyebrow">YOUR OPENINGS</span>
-            <h2>Manage job posts</h2>
+      {/* Charts */}
+      <div className="dashboard-charts">
+        {/* Area — applications over time */}
+        <div className="dashboard-chart-card glass-card">
+          <div className="dashboard-chart-card__heading">
+            <h3>Applications over time</h3>
+            <span className="dashboard-chart-card__sub">Last 6 weeks</span>
           </div>
-          <Link className="text-link" to="/provider/jobs/new">Create a role <ArrowRight size={15} /></Link>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart
+              data={weeklyData}
+              margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="appGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.06)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="week"
+                tick={{ fill: "#77839e", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "#77839e", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                width={26}
+              />
+              <Tooltip
+                {...TOOLTIP_STYLE}
+                cursor={{ stroke: "rgba(129,140,248,0.18)", strokeWidth: 1 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                name="Applications"
+                stroke="#818cf8"
+                strokeWidth={2}
+                fill="url(#appGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: "#818cf8", strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
-        {isLoading ? (
-          <Loading label="Loading your team workspace" />
-        ) : jobs.length ? (
-          <>
-            <div className="provider-job-list">
-            {jobs.map((job) => (
-              <article className="provider-job-row" key={job.jobId}>
-                <div>
-                  <h3>{job.title}</h3>
-                  <p>{job.location} · {job.employmentType} · {job.status}</p>
-                </div>
-                <button
-                  className="button button--quiet button--small"
-                  type="button"
-                  onClick={() => handleJobStatus(job)}
-                >
-                  {job.status === "published" ? "Pause" : "Republish"}
-                </button>
-              </article>
-            ))}
-            </div>
-            {hasMoreJobs && (
-            <div className="dashboard-load-more">
-              <button
-                className="button button--quiet button--small"
-                type="button"
-                disabled={isLoadingMoreJobs}
-                onClick={loadMoreJobs}
-              >
-                {isLoadingMoreJobs ? "Loading…" : "Load more jobs"}
-              </button>
-            </div>
-            )}
-          </>
-        ) : (
-          <div className="dashboard-empty">
-            <p>Your first role can reach motivated candidates here.</p>
-            <Link to="/provider/jobs/new">Post your first job <ArrowRight size={14} /></Link>
+        {/* Donut — status breakdown */}
+        <div className="dashboard-chart-card glass-card">
+          <div className="dashboard-chart-card__heading">
+            <h3>Status breakdown</h3>
+            <span className="dashboard-chart-card__sub">
+              {applications.length} total
+            </span>
           </div>
-        )}
-      </section>
-
-      <section className="dashboard-panel glass-card">
-        <div className="dashboard-panel__heading">
-          <div>
-            <span className="eyebrow">CANDIDATES</span>
-            <h2>Recent applications</h2>
-          </div>
-          <span className="dashboard-count">{applications.length} loaded</span>
+          {isLoading ? (
+            <div className="dashboard-chart-card__empty">Loading…</div>
+          ) : pieData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={148}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={46}
+                    outerRadius={68}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry) => (
+                      <Cell key={entry.key} fill={entry.color} opacity={0.9} />
+                    ))}
+                  </Pie>
+                  <Tooltip {...TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="chart-legend">
+                {pieData.map((entry) => (
+                  <div key={entry.key} className="chart-legend__item">
+                    <span className="chart-legend__label">
+                      <span
+                        className="chart-legend__dot"
+                        style={{ background: entry.color }}
+                      />
+                      {entry.label}
+                    </span>
+                    <span className="chart-legend__value">{entry.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="dashboard-chart-card__empty">
+              No applications yet.
+            </div>
+          )}
         </div>
+      </div>
 
-        {isLoading ? (
-          <Loading label="Loading applications" />
-        ) : applications.length ? (
-          <>
-            <div className="application-list">
-            {applications.map((application) => (
-              <article className="application-row application-row--provider" key={application.applicationId}>
-                <span className="application-row__icon"><Users size={17} /></span>
-                <div className="application-row__main">
-                  <strong>{application.candidateName}</strong>
-                  <span>{application.jobTitle} · {formatDate(application.createdAt)}</span>
-                  {application.coverNote && <p>{application.coverNote}</p>}
-                </div>
-                <label className="status-select">
-                  <span className="sr-only">Update candidate status</span>
-                  <CustomSelector
-                    value={application.status}
-                    disabled={updatingId === application.applicationId}
-                    onChange={(event) => handleApplicationStatus(application, event.target.value)}
-                    options={[
-                      { value: "submitted", label: "Submitted" },
-                      { value: "reviewing", label: "In review" },
-                      { value: "interview", label: "Interview" },
-                      { value: "accepted", label: "Offer made" },
-                      { value: "declined", label: "Closed" },
-                    ]}
-                  />
-                </label>
-              </article>
-            ))}
-            </div>
-            {hasMoreApplications && (
-            <div className="dashboard-load-more">
-              <button
-                className="button button--quiet button--small"
-                type="button"
-                disabled={isLoadingMoreApplications}
-                onClick={loadMoreApplications}
-              >
-                {isLoadingMoreApplications ? "Loading…" : "Load more applications"}
-              </button>
-            </div>
-            )}
-          </>
-        ) : (
-          <div className="dashboard-empty">
-            <p>Applications will appear here as people apply.</p>
+      {/* Quick action cards */}
+      <div className="dashboard-quick-links">
+        <Link
+          className="dashboard-quick-card glass-card"
+          to="/provider/jobs"
+        >
+          <span className="dashboard-quick-card__icon">
+            <LayoutList size={20} />
+          </span>
+          <div>
+            <strong>Manage job posts</strong>
+            <span>View, pause, or remove your active listings</span>
           </div>
-        )}
-      </section>
+          <ArrowRight size={16} />
+        </Link>
+        <Link
+          className="dashboard-quick-card glass-card"
+          to="/provider/applications"
+        >
+          <span className="dashboard-quick-card__icon">
+            <ClipboardList size={20} />
+          </span>
+          <div>
+            <strong>Applications</strong>
+            <span>Review and update each candidate's status</span>
+          </div>
+          <ArrowRight size={16} />
+        </Link>
+      </div>
     </>
   );
 };
+
+// ─── Page shell ────────────────────────────────────────────────────────────
 
 const DashboardPage = () => {
   const { profile } = useAuth();

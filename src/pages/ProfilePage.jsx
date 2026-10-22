@@ -27,6 +27,7 @@ const ProfilePage = () => {
       companyName: profile.companyName || "",
       companyWebsite: profile.companyWebsite || "",
       bio: profile.bio || "",
+      portfolio: profile.portfolio || "",
     });
   }, [profile]);
 
@@ -78,25 +79,25 @@ const ProfilePage = () => {
       </div>
 
       <form className="profile-form glass-card" onSubmit={handleSubmit}>
-        <section className="profile-role-setting">
-          <label className="form-field">
-            Account type
-            <CustomSelector
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              options={[
-                { value: "student", label: "Student" },
-                { value: "employee", label: "Employee / job seeker" },
-                { value: "jobProvider", label: "Job provider" },
-              ]}
-            />
-          </label>
-          <p>
-            Choose how you use Skill to Hire. Job providers can post jobs;
-            students and employees can apply.
-          </p>
-        </section>
+        {form.role !== "jobProvider" && (
+          <section className="profile-role-setting">
+            <label className="form-field">
+              Account type
+              <CustomSelector
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                options={[
+                  { value: "student", label: "Student" },
+                  { value: "employee", label: "Employee / job seeker" },
+                ]}
+              />
+            </label>
+            <p>
+              Switch between a student and job seeker account at any time.
+            </p>
+          </section>
+        )}
 
         {form.role !== "jobProvider" && (
           <div className="profile-form__row">
@@ -165,6 +166,16 @@ const ProfilePage = () => {
                 value={form.skills}
                 onChange={handleChange}
                 placeholder="Separate skills with commas"
+              />
+            </label>
+            <label className="form-field">
+              Portfolio link
+              <input
+                name="portfolio"
+                type="text"
+                value={form.portfolio}
+                onChange={handleChange}
+                placeholder="https://yourportfolio.com"
               />
             </label>
           </>

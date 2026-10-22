@@ -157,6 +157,7 @@ export const updateUserProfile = async (docId, changes) => {
     "companyName",
     "companyWebsite",
     "bio",
+    "portfolio",
   ];
   const safeChanges = Object.fromEntries(
     Object.entries(changes).filter(([key]) => allowedFields.includes(key)),

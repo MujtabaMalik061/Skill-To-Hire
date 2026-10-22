@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   getDoc,
@@ -20,16 +21,39 @@ import { Limit } from "../utils/Constants.js";
 const jobsCollection = "Jobs";
 const searchCollection = "SearchTokens";
 
-const toSearchTokens = (values) =>
-  [
-    ...new Set(
-      values
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .match(/[a-z0-9+#.-]{2,}/g) || [],
-    ),
-  ].slice(0, 100);
+const toSearchTokens = (values) => {
+  const tokens = new Set();
+
+  for (const value of values.filter(Boolean)) {
+    const words = value.toLowerCase().match(/[a-z0-9+#.-]{2,}/g) || [];
+
+    for (const word of words) {
+      for (let i = 2; i <= word.length; i++) {
+        tokens.add(word.slice(0, i));
+      }
+    }
+
+    for (let i = 0; i < words.length - 1; i++) {
+      const base = words[i];
+      const next = words[i + 1];
+      for (let j = 1; j <= next.length; j++) {
+        tokens.add(`${base} ${next.slice(0, j)}`);
+      }
+    }
+  }
+
+  return [...tokens].slice(0, 200);
+};
+
+const toSuggestionWords = (values) => [
+  ...new Set(
+    values
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .match(/[a-z0-9+#.-]{2,}/g) || [],
+  ),
+];
 
 export const storeSearchToken = async (searchTokens) => {
   if (!searchTokens?.length) return;
@@ -46,38 +70,17 @@ export const storeSearchToken = async (searchTokens) => {
   );
 };
 
-// export const createJob = async (providerProfile, jobData) => {
-//   const jobRef = doc(collection(db, jobsCollection));
-//   const job = {
-//     ...jobData,
-//     jobId: jobRef.id,
-//     providerDocId: providerProfile.docId,
-//     providerAuthId: providerProfile.authId,
-//     companyName: providerProfile.companyName,
-//     searchTokens: toSearchTokens([
-//       jobData.title,
-//       providerProfile.companyName,
-//       jobData.location,
-//       ...(jobData.skills || []),
-//     ]),
-//     status: "published",
-//     createdAt: serverTimestamp(),
-//     updatedAt: serverTimestamp(),
-//   };
-
-//   await setDoc(jobRef, job);
-//   return job;
-// };
-
 export const createJob = async (providerProfile, jobData) => {
   const jobRef = doc(collection(db, jobsCollection));
-
-  const searchTokens = toSearchTokens([
+  const fields = [
     jobData.title,
     providerProfile.companyName,
     jobData.location,
     ...(jobData.skills || []),
-  ]);
+  ];
+
+  const searchTokens = toSearchTokens(fields);
+  const suggestionWords = toSuggestionWords(fields);
 
   const job = {
     ...jobData,
@@ -92,7 +95,7 @@ export const createJob = async (providerProfile, jobData) => {
   };
 
   await setDoc(jobRef, job);
-  await storeSearchToken(searchTokens);
+  await storeSearchToken(suggestionWords);
   return job;
 };
 
@@ -109,16 +112,6 @@ export const getSearchTokens = async () => {
     throw error;
   }
 };
-
-// const searchTokens = await getSearchTokens();
-
-// const searchSuggestions = searchTokens
-//   .filter((token) =>
-//     token.toLowerCase().startsWith(searchInput.trim().toLowerCase()),
-//   )
-//   .slice(0, 10);
-
-// console.log(searchSuggestions);
 
 export const getJob = async (jobId) => {
   const jobSnapshot = await getDoc(doc(db, jobsCollection, jobId));
@@ -154,9 +147,9 @@ export const getPublishedJobsPage = async ({
     constraints.splice(1, 0, where("employmentType", "==", employmentType));
   }
 
-  const searchToken = searchTerm.toLowerCase().match(/[a-z0-9+#.-]{2,}/)?.[0];
+  const searchToken = searchTerm.toLowerCase().trim().replace(/\s+/g, " ");
 
-  if (searchToken) {
+  if (searchToken.length >= 2) {
     constraints.splice(
       1,
       0,
@@ -198,4 +191,8 @@ export const updateJobStatus = async (jobId, status) => {
     status,
     updatedAt: serverTimestamp(),
   });
+};
+
+export const deleteJob = async (jobId) => {
+  await deleteDoc(doc(db, jobsCollection, jobId));
 };

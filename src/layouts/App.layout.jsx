@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   BriefcaseBusiness,
   Building2,
+  ClipboardList,
   Compass,
+  FileText,
   LayoutDashboard,
+  LayoutList,
   LogOut,
-  Search,
+  Menu,
   UserRound,
+  X,
 } from "lucide-react";
 import {
   Link,
@@ -20,11 +24,12 @@ import SiteHeader from "../components/site-header.component.jsx";
 import useAuth from "../hooks/auth.hook.jsx";
 import { signOut } from "../services/auth.services.js";
 
-const WorkspaceSidebar = () => {
+const WorkspaceSidebar = ({ isOpen, onClose }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
+    onClose();
     await signOut();
     navigate("/");
   };
@@ -32,26 +37,21 @@ const WorkspaceSidebar = () => {
   const workspaceLinks =
     profile?.role === "jobProvider"
       ? [
-          {
-            label: "Employer workspace",
-            to: "/dashboard",
-            icon: LayoutDashboard,
-          },
-          {
-            label: "Post a job",
-            to: "/provider/jobs/new",
-            icon: BriefcaseBusiness,
-          },
+          { label: "Employer workspace", to: "/dashboard", icon: LayoutDashboard },
+          { label: "Manage jobs", to: "/provider/jobs", icon: LayoutList },
+          { label: "Post a job", to: "/provider/jobs/new", icon: BriefcaseBusiness },
+          { label: "Applications", to: "/provider/applications", icon: ClipboardList },
           { label: "Browse jobs", to: "/jobs", icon: Compass },
         ]
       : [
           { label: "My dashboard", to: "/dashboard", icon: LayoutDashboard },
+          { label: "My applications", to: "/applications", icon: FileText },
           { label: "Explore jobs", to: "/jobs", icon: Compass },
         ];
 
   return (
-    <aside className="workspace-sidebar">
-      <Link className="brand workspace-sidebar__brand" to="/">
+    <aside className={`workspace-sidebar${isOpen ? " is-open" : ""}`}>
+      <Link className="brand workspace-sidebar__brand" to="/" onClick={onClose}>
         <span className="brand__mark">
           <BriefcaseBusiness size={18} strokeWidth={2.4} />
         </span>
@@ -64,7 +64,7 @@ const WorkspaceSidebar = () => {
         <span className="workspace-sidebar__label">WORKSPACE</span>
         <nav className="workspace-sidebar__nav" aria-label="Workspace">
           {workspaceLinks.map(({ label, to, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === "/dashboard"}>
+            <NavLink key={to} to={to} end onClick={onClose}>
               <Icon size={17} />
               <span>{label}</span>
             </NavLink>
@@ -75,11 +75,11 @@ const WorkspaceSidebar = () => {
       <div className="workspace-sidebar__group">
         <span className="workspace-sidebar__label">ACCOUNT</span>
         <nav className="workspace-sidebar__nav" aria-label="Account">
-          <NavLink to="/profile">
+          <NavLink to="/profile" onClick={onClose}>
             <UserRound size={17} />
             <span>Profile settings</span>
           </NavLink>
-          <NavLink to="/notifications">
+          <NavLink to="/notifications" onClick={onClose}>
             <Bell size={17} />
             <span>Notifications</span>
           </NavLink>
@@ -120,28 +120,39 @@ const WorkspaceSidebar = () => {
   );
 };
 
-const WorkspaceTopbar = () => {
-  const [search, setSearch] = useState("");
-  const navigate = useNavigate();
-  const { profile } = useAuth();
+const usePageTitle = (role) => {
+  const { pathname } = useLocation();
+  if (pathname === "/dashboard")
+    return role === "jobProvider" ? "Employer workspace" : "My dashboard";
+  if (pathname === "/profile") return "Profile settings";
+  if (pathname === "/notifications") return "Notifications";
+  if (pathname === "/provider/jobs") return "Manage jobs";
+  if (pathname === "/provider/jobs/new") return "Post a job";
+  if (pathname === "/provider/applications") return "Applications";
+  if (pathname.startsWith("/provider/candidates/")) return "Candidate profile";
+  if (pathname === "/applications") return "My applications";
+  if (pathname === "/jobs") return "Browse jobs";
+  if (pathname.startsWith("/jobs/")) return "Job details";
+  return "";
+};
 
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const query = search.trim();
-    navigate(query ? `/jobs?search=${encodeURIComponent(query)}` : "/jobs");
-  };
+const WorkspaceTopbar = ({ onToggle, isOpen }) => {
+  const { profile } = useAuth();
+  const pageTitle = usePageTitle(profile?.role);
 
   return (
     <header className="workspace-topbar">
-      <form className="workspace-topbar__search" onSubmit={handleSearch}>
-        <Search size={17} aria-hidden="true" />
-        <input
-          aria-label="Search jobs"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search jobs, skills, or companies"
-        />
-      </form>
+      <button
+        className="icon-button workspace-topbar__hamburger"
+        type="button"
+        aria-label={isOpen ? "Close menu" : "Open menu"}
+        onClick={onToggle}
+      >
+        {isOpen ? <X size={18} /> : <Menu size={18} />}
+      </button>
+
+      <h2 className="topbar-page-title">{pageTitle}</h2>
+
       {profile?.companyName && (
         <span className="workspace-topbar__context">
           <Building2 size={15} /> {profile.companyName}
@@ -161,12 +172,24 @@ const WorkspaceTopbar = () => {
 const AppLayout = () => {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const isAccountRoute = [
-    "/dashboard",
-    "/profile",
-    "/notifications",
-    "/provider/jobs/new",
-  ].some((path) => pathname === path);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // close sidebar whenever the route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  const isAccountRoute =
+    [
+      "/dashboard",
+      "/profile",
+      "/notifications",
+      "/applications",
+      "/provider/jobs",
+      "/provider/jobs/new",
+      "/provider/applications",
+    ].some((path) => pathname === path) ||
+    pathname.startsWith("/provider/candidates/");
   const isAuthenticatedJobsRoute =
     user && (pathname === "/jobs" || pathname.startsWith("/jobs/"));
   const isWorkspaceRoute = isAccountRoute || isAuthenticatedJobsRoute;
@@ -174,9 +197,23 @@ const AppLayout = () => {
   if (isWorkspaceRoute) {
     return (
       <div className="workspace-shell">
-        <WorkspaceSidebar />
+        {/* backdrop — only rendered when drawer is open */}
+        {sidebarOpen && (
+          <div
+            className="workspace-sidebar__overlay"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <WorkspaceSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
         <div className="workspace-shell__main">
-          <WorkspaceTopbar />
+          <WorkspaceTopbar
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen((o) => !o)}
+          />
           <Outlet />
         </div>
       </div>

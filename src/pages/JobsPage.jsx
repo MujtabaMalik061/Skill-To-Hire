@@ -1,11 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import JobCard from "../components/job-card.component.jsx";
 import {CustomSelector} from "../components/custom.components.jsx";
 import Loading from "../components/loading.component.jsx";
-import { getPublishedJobsPage } from "../services/jobs.services.js";
+import { getPublishedJobsPage, getSearchTokens } from "../services/jobs.services.js";
 import "../assets/styles/JobsPage.css";
+
+const TOKENS_KEY = "sth_search_tokens";
+const TOKENS_TTL = 24 * 60 * 60 * 1000;
+
+const loadCachedTokens = () => {
+  try {
+    const raw = localStorage.getItem(TOKENS_KEY);
+    if (!raw) return null;
+    const { tokens, ts } = JSON.parse(raw);
+    return Date.now() - ts < TOKENS_TTL ? tokens : null;
+  } catch {
+    return null;
+  }
+};
+
+const cacheTokens = (tokens) => {
+  localStorage.setItem(TOKENS_KEY, JSON.stringify({ tokens, ts: Date.now() }));
+};
 
 const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,7 +35,47 @@ const JobsPage = () => {
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState("");
+  const [allTokens, setAllTokens] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTerm = searchParams.get("search") || "";
+  const searchWrapRef = useRef(null);
+
+  useEffect(() => {
+    const cached = loadCachedTokens();
+    if (cached) {
+      setAllTokens(cached);
+      return;
+    }
+    getSearchTokens()
+      .then((tokens) => {
+        setAllTokens(tokens);
+        cacheTokens(tokens);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const trimmed = keyword.trim().toLowerCase();
+  const suggParts = trimmed.split(/\s+/).filter(Boolean);
+  const lastWord = suggParts.at(-1) ?? "";
+  const leadingPhrase = suggParts.slice(0, -1).join(" ");
+  const suggestions =
+    lastWord.length >= 2
+      ? allTokens
+          .filter((t) => t.startsWith(lastWord))
+          .slice(0, 8)
+          .map((t) => (leadingPhrase ? `${leadingPhrase} ${t}` : t))
+          .filter((s) => s !== trimmed)
+      : [];
 
   const loadJobs = useCallback(async ({ nextCursor = null, append = false } = {}) => {
     if (append) {
@@ -52,17 +110,26 @@ const JobsPage = () => {
     loadJobs();
   }, [loadJobs]);
 
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
+  const submitSearch = (value) => {
     const nextParams = new URLSearchParams(searchParams);
-
-    if (keyword.trim()) {
-      nextParams.set("search", keyword.trim());
+    if (value.trim()) {
+      nextParams.set("search", value.trim());
     } else {
       nextParams.delete("search");
     }
-
     setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setShowSuggestions(false);
+    submitSearch(keyword);
+  };
+
+  const handleSuggestionClick = (token) => {
+    setKeyword(token);
+    setShowSuggestions(false);
+    submitSearch(token);
   };
 
   return (
@@ -74,15 +141,43 @@ const JobsPage = () => {
       </div>
 
       <form className="jobs-toolbar glass-card" onSubmit={handleSearchSubmit}>
+        <div className="jobs-toolbar__search-wrap" ref={searchWrapRef}>
         <label className="jobs-toolbar__search">
           <Search size={18} aria-hidden="true" />
           <input
             aria-label="Search by role, skill, or company"
             placeholder="Role, skill, company, or location"
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            autoComplete="off"
+            onChange={(event) => {
+              setKeyword(event.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={(e) => e.key === "Escape" && setShowSuggestions(false)}
           />
         </label>
+        {showSuggestions && suggestions.length > 0 && (
+          <ul className="search-suggestions" role="listbox">
+            {suggestions.map((token) => (
+              <li key={token}>
+                <button
+                  type="button"
+                  role="option"
+                  className="search-suggestions__item"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSuggestionClick(token);
+                  }}
+                >
+                  <Search size={12} aria-hidden="true" />
+                  {token}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        </div>
           <CustomSelector
             aria-label="Filter by employment type"
             value={employmentType}
